@@ -11,7 +11,7 @@ Après toute modification d'un fichier **mis en cache** (`index.html`, `app.js`,
 `sw.js` :
 
 ```js
-const VERSION = 'omni-arcade-v8';   // → v9
+const VERSION = 'omni-arcade-v9';   // → v10
 ```
 
 Sans ce changement, le navigateur ne détecte aucun service worker différent, ne
