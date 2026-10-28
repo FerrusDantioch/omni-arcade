@@ -26,6 +26,15 @@ fichier, sinon il manquera hors ligne.
 (README, LICENSE, `.gitattributes`) : cela imposerait un retéléchargement
 complet à tous les utilisateurs sans raison.
 
+## Nouvelle version : jamais de changement par surprise
+
+Une nouvelle version **attend** un appui sur « Mettre à jour »
+(`#bandeau-maj`, dans le pied du menu : jamais en pleine partie). Ne pas
+remettre `self.skipWaiting()` dans l'installation de `sw.js` : il n'est
+appelé qu'au message `{ type: 'activer' }`. Le `fetch` ne cherche que dans
+le cache de `VERSION`. Limite du navigateur : si l'application est
+complètement fermée, la nouvelle version est là à l'ouverture suivante.
+
 ## Tester en local
 
 ```bash

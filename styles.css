@@ -194,6 +194,17 @@ body::after {
   align-items: center;
   text-align: center;
 }
+/* Bandeau « nouvelle version prete » (menu). :not([hidden]) : sinon
+   display: flex annulerait le masquage par l'attribut hidden. */
+.bandeau-maj:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+}
+.bandeau-maj p { color: var(--texte); font-size: 0.85rem; }
+
 .note { color: var(--texte-doux); font-size: 0.72rem; }
 .note--ok { color: var(--vert); }
 

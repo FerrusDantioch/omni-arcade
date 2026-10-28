@@ -1840,6 +1840,44 @@ const ModalePseudo = {
  * les fichiers de l'application. Grace a lui, le jeu se lance meme sans
  * connexion Internet apres la premiere visite.
  */
+/*
+ * Nouvelle version : le service worker la telecharge en arriere-plan,
+ * puis ATTEND. Rien ne change par surprise (et jamais en pleine partie) :
+ * le menu propose « Mettre a jour », et c'est le joueur qui choisit.
+ */
+let inscriptionSw = null;
+let miseAJourDemandee = false;
+
+function surveillerMisesAJour(inscription) {
+  inscriptionSw = inscription;
+  /* Une version attendait deja (telechargee lors d'une visite precedente). */
+  montrerMiseAJour();
+  inscription.addEventListener('updatefound', () => {
+    const nouveau = inscription.installing;
+    if (!nouveau) return;
+    nouveau.addEventListener('statechange', () => {
+      if (nouveau.state === 'installed') montrerMiseAJour();
+    });
+  });
+  /* A chaque retour dans l'application, on regarde s'il y a du nouveau. */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') inscription.update().catch(() => {});
+  });
+}
+
+function montrerMiseAJour() {
+  /* Sans « controller », c'est la toute premiere installation. */
+  const prete = !!(inscriptionSw && inscriptionSw.waiting && navigator.serviceWorker.controller);
+  $('#bandeau-maj').hidden = !prete;
+}
+
+function mettreAJour() {
+  if (!inscriptionSw || !inscriptionSw.waiting) return;
+  miseAJourDemandee = true;
+  $('#btn-maj').disabled = true;
+  inscriptionSw.waiting.postMessage({ type: 'activer' });
+}
+
 function installerServiceWorker() {
   const note = $('#etat-hors-ligne');
 
@@ -1852,10 +1890,17 @@ function installerServiceWorker() {
     return;
   }
 
+  /* Ce changement a aussi lieu a la toute premiere installation : on ne
+     recharge que si l'on a touche « Mettre a jour ». */
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (miseAJourDemandee) location.reload();
+  });
+
   navigator.serviceWorker.register('sw.js')
-    .then(() => {
+    .then((inscription) => {
       note.textContent = 'Prêt à jouer hors ligne ✓';
       note.classList.add('note--ok');
+      surveillerMisesAJour(inscription);
     })
     .catch(() => {
       note.textContent = 'Mode hors ligne indisponible.';
@@ -1903,6 +1948,7 @@ function brancherBoutons() {
   });
 
   $('#btn-pause').addEventListener('click', () => Moteur.pause(!Moteur.enPause));
+  $('#btn-maj').addEventListener('click', mettreAJour);
   $('#btn-reprendre').addEventListener('click', () => Moteur.pause(false));
   $('#btn-rejouer').addEventListener('click', () => {
     if (Moteur.jeu) Moteur.demarrer(Moteur.jeu);

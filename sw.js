@@ -10,7 +10,7 @@
    version ci-dessous : l'ancien cache sera automatiquement supprime.
    ========================================================================= */
 
-const VERSION = 'omni-arcade-v9';
+const VERSION = 'omni-arcade-v10';
 
 /* Débuts de nom de NOS caches (« arcade-retro- » : ancien nom de
    l'application). Toutes les applications de ferrusdantioch.github.io
@@ -38,9 +38,12 @@ self.addEventListener('install', (evenement) => {
          10 minutes). Sinon, deux mises a jour publiees coup sur coup
          pourraient ranger d'anciens fichiers sous la nouvelle version. */
       .then((cache) => cache.addAll(FICHIERS.map((f) => new Request(f, { cache: 'reload' }))))
-      /* La nouvelle version prend la main sans attendre la fermeture des onglets. */
-      .then(() => self.skipWaiting())
   );
+  /* Volontairement, PAS de self.skipWaiting() ici : une nouvelle version
+     attend qu'on touche « Mettre à jour » sur le menu (voir le message
+     « activer » plus bas). Jamais de changement en pleine partie. Seule
+     exception, fixee par le navigateur : si l'application est completement
+     fermee, la nouvelle version est la a la prochaine ouverture. */
 });
 
 /* --- 2. Activation : on efface NOS caches des versions precedentes ------ */
@@ -54,10 +57,19 @@ self.addEventListener('activate', (evenement) => {
   );
 });
 
-/* --- 3. Interception des requetes --------------------------------------
+/* --- 3. On a touche « Mettre a jour » ---------------------------------
+   Cette version prend le relais ; la page le remarque (evenement
+   « controllerchange ») et se recharge. */
+self.addEventListener('message', (evenement) => {
+  if (evenement.data && evenement.data.type === 'activer') self.skipWaiting();
+});
+
+/* --- 4. Interception des requetes --------------------------------------
    Strategie « cache d'abord » : on repond immediatement avec la copie
    locale si elle existe, sinon on va la chercher sur le reseau et on la
    garde pour la prochaine fois.
+   On ne cherche que dans le cache de CETTE version : pendant qu'une
+   nouvelle version attend, son cache existe deja a cote.
    ----------------------------------------------------------------------- */
 self.addEventListener('fetch', (evenement) => {
   const requete = evenement.request;
@@ -67,7 +79,7 @@ self.addEventListener('fetch', (evenement) => {
   if (new URL(requete.url).origin !== self.location.origin) return;
 
   evenement.respondWith(
-    caches.match(requete, { ignoreSearch: true }).then((copieLocale) => {
+    caches.match(requete, { ignoreSearch: true, cacheName: VERSION }).then((copieLocale) => {
       if (copieLocale) return copieLocale;
 
       return fetch(requete)
@@ -82,7 +94,7 @@ self.addEventListener('fetch', (evenement) => {
         .catch(() => {
           /* Hors ligne et fichier inconnu : pour une navigation, on renvoie
              la page d'accueil, qui est toujours en cache. */
-          if (requete.mode === 'navigate') return caches.match('./index.html');
+          if (requete.mode === 'navigate') return caches.match('./index.html', { cacheName: VERSION });
           return new Response('', { status: 503, statusText: 'Hors ligne' });
         });
     })
