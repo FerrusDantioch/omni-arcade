@@ -10,7 +10,7 @@
    version ci-dessous : l'ancien cache sera automatiquement supprime.
    ========================================================================= */
 
-const VERSION = 'omni-arcade-v10';
+const VERSION = 'omni-arcade-v11';
 
 /* Débuts de nom de NOS caches (« arcade-retro- » : ancien nom de
    l'application). Toutes les applications de ferrusdantioch.github.io
